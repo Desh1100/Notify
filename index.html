@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Send Notifications</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+
+    <!-- <script src="https://www.gstatic.com/firebasejs/9.6.5/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.5/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.5/firebase-messaging.js"></script> -->
+
+    <!-- Add this to your HTML file -->
+  </head>
+  <body>
+    <h1>Send Notifications</h1>
+    <form id="message-form">
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required />
+      <br />
+      <label for="message">Message:</label>
+      <input type="text" id="message" name="message" required />
+      <br />
+      <button type="submit">Send</button>
+    </form>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.5/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/9.6.5/firebase-firestore.js";
+      import { getMessaging } from "https://www.gstatic.com/firebasejs/9.6.5/firebase-messaging.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDyFtTqVD2jwyQViIy3C7TK0ErdmuKoG9c",
+        authDomain: "cuuby-care-new.firebaseapp.com",
+        projectId: "cuuby-care-new",
+        storageBucket: "cuuby-care-new.appspot.com",
+        messagingSenderId: "998322346963",
+        appId: "1:998322346963:web:3e5cdc7e27c6eee9a2ed26",
+        measurementId: "G-E90BWCTE93",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+
+      // Initialize Firestore
+      const db = getFirestore(app);
+
+      // Initialize Messaging
+      const messaging = getMessaging();
+
+      async function fetchTokensFromFirestore() {
+        const tokens = [];
+
+        // Use the Firebase JavaScript SDK to fetch tokens from Firestore
+        const db = getFirestore(); // Use the imported function
+        const tokensCollection = collection(db, "tokens"); // Use the imported functions
+
+        // Assuming you have a document in the 'tokens' collection that contains an array of tokens
+        const tokensDocument = await getDocs(tokensCollection); // Use the imported function
+
+        if (!tokensDocument.empty) {
+          tokensDocument.forEach((doc) => {
+            tokens.push(doc.id);
+          });
+        }
+
+        return tokens;
+      }
+
+      const serverKey =
+        "AAAA6HCmG9M:APA91bHqGgq9G1BRLS5TTwW91RYhxlzW8Vf89WZsvUkD5iSimdb5kOvyScC5y_ah8DSzwsQu-n6iTHpOLs3VHnJajvw4pSf42xOUWgtoxUaVK1FNWpErXpNsx-qc34oHT7SXvUseXoqv";
+      const fcmEndpoint = "https://fcm.googleapis.com/fcm/send";
+
+      document
+        .getElementById("message-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the form from submitting traditionally
+
+          const messageText = document.getElementById("message").value;
+          const titleText = document.getElementById("title").value;
+
+          // Fetch tokens from Firestore and append them to registration_ids
+          fetchTokensFromFirestore().then((tokens) => {
+            const message = {
+              registration_ids: tokens, // Use 'registration_ids' for multiple tokens
+              notification: {
+                title: titleText,
+                body: messageText,
+              },
+            };
+
+            fetch(fcmEndpoint, {
+              method: "POST",
+              headers: {
+                Authorization: `key=${serverKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(message),
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error("Failed to send notification.");
+                }
+                console.log("Notification sent successfully.");
+              })
+              .catch((error) => {
+                console.error("Error sending notification:", error);
+              });
+          });
+
+          // Clear the form field
+          document.getElementById("message").value = "";
+        });
+    </script>
+  </body>
+</html>
